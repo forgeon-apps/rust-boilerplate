@@ -1,444 +1,331 @@
 // src/routes/pages.rs
-use axum::{
-    response::Html,
-    routing::get,
-    Router,
-};
+use axum::{response::Html, routing::get, Router};
 
 pub fn create_route() -> Router {
     Router::new()
+        .route("/", get(home_page))
         .route("/info", get(info_page))
         .route("/about", get(about_page))
         .route("/framework", get(framework_page))
 }
 
-// ───────────────── HANDLERS ─────────────────
+// ───────────────── SHELL ─────────────────
 
-async fn info_page() -> Html<&'static str> {
-    Html(r#"<!doctype html>
+fn html_shell(title: &str, body: &str) -> Html<String> {
+    let html = format!(
+        r#"<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Forgeon · Rust Playground · Info</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
-      :root {
-        color-scheme: dark light;
+      :root {{
+        color-scheme: dark;
         --bg: #050505;
-        --fg: #f5f5f5;
+        --card: #0f0f10;
+        --border: #222;
+        --text: #f5f5f5;
         --muted: #9ca3af;
-        --accent: #ffffff;
-        --border: #27272a;
-        --mono: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        --sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
+        --accent: #e5e5e5;
+      }}
+      * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+      body {{
         min-height: 100vh;
-        font-family: var(--sans);
-        background: radial-gradient(circle at top, #18181b 0, #020617 55%);
-        color: var(--fg);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+        background: radial-gradient(circle at top, #111 0, #050505 55%);
+        color: var(--text);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 1.5rem;
-      }
-      .card {
+        padding: 2rem 1.5rem;
+      }}
+      .card {{
         width: 100%;
         max-width: 720px;
-        border-radius: 0.9rem;
+        border-radius: 1.25rem;
         border: 1px solid var(--border);
-        background: rgba(10, 10, 10, 0.95);
-        box-shadow:
-          0 18px 60px rgba(0,0,0,0.8),
-          0 0 0 1px rgba(255,255,255,0.02);
-        padding: 1.75rem 1.6rem;
-      }
-      h1 {
-        font-size: 1.35rem;
-        letter-spacing: 0.18em;
+        background: radial-gradient(circle at top left, #151515 0, var(--card) 50%, #050505 100%);
+        padding: 1.75rem 1.75rem 1.5rem;
+      }}
+      .eyebrow {{
+        font-size: 0.7rem;
+        letter-spacing: 0.22em;
         text-transform: uppercase;
-        margin: 0 0 0.8rem 0;
-        font-weight: 600;
-      }
-      h1 span {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: rgba(15,15,15,0.9);
-      }
-      p {
-        margin: 0.5rem 0;
+        color: var(--muted);
+        margin-bottom: 0.75rem;
+      }}
+      h1 {{
+        font-size: 1.6rem;
+        line-height: 1.2;
+        margin-bottom: 0.75rem;
+      }}
+      p {{
+        font-size: 0.9rem;
         line-height: 1.6;
         color: var(--muted);
-        font-size: 0.9rem;
-      }
-      .meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-        margin: 0.9rem 0 1.4rem;
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.18em;
-        color: var(--muted);
-      }
-      .pill {
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        padding: 0.25rem 0.8rem;
-        background: rgba(12,12,12,0.85);
-      }
-      code {
-        font-family: var(--mono);
-        font-size: 0.78rem;
-        background: #020617;
-        border-radius: 0.45rem;
-        border: 1px solid #111827;
-        padding: 0.6rem 0.75rem;
-        display: block;
-        margin-top: 0.6rem;
-        color: var(--fg);
-        white-space: pre-wrap;
-      }
-      a {
-        color: var(--accent);
-        text-decoration: none;
-        border-bottom: 1px solid rgba(148,163,184,0.4);
-        padding-bottom: 1px;
-      }
-      a:hover {
-        border-color: var(--fg);
-      }
-      .links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
-        margin-top: 1.1rem;
-        font-size: 0.78rem;
-      }
-      .link-pill {
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        padding: 0.35rem 0.9rem;
-        background: #020617;
-      }
-      .link-pill span {
-        opacity: 0.7;
-      }
-      .mono {
-        font-family: var(--mono);
-      }
-    </style>
-  </head>
-  <body>
-    <main class="card">
-      <h1><span>Forgeon · Rust playground</span></h1>
-
-      <p>
-        This service is a small <strong>Axum</strong> API used to test networking,
-        health checks, and container behavior before wiring it into real Forgeon runtimes.
-      </p>
-
-      <div class="meta">
-        <div class="pill">Mode: Playground</div>
-        <div class="pill">Stack: Rust · Axum · Tokio</div>
-        <div class="pill">Status: Online</div>
-      </div>
-
-      <p>Quick endpoints you can hit:</p>
-      <code>
-GET /status        → JSON health payload
-GET /v1/cats       → Sample resource (when DB is enabled)
-GET /info          → This info page
-GET /about         → Short description of this demo
-GET /framework     → Details about the Rust/Axum stack
-      </code>
-
-      <div class="links">
-        <span class="link-pill">
-          <span>Dashboard hint · </span>
-          <span class="mono">/status</span>
-        </span>
-        <span class="link-pill">
-          <span>Forgeon · </span>
-          <a href="https://forgeon.io" target="_blank" rel="noreferrer">forgeon.io</a>
-        </span>
-      </div>
-    </main>
-  </body>
-</html>
-"#)
-}
-
-async fn about_page() -> Html<&'static str> {
-    Html(r#"<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Forgeon · About this Rust demo</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      :root {
-        color-scheme: dark light;
-        --bg: #050505;
-        --fg: #f5f5f5;
-        --muted: #9ca3af;
-        --border: #27272a;
-        --accent: #ffffff;
-        --sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: #020617;
-        color: var(--fg);
-        font-family: var(--sans);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem;
-      }
-      .card {
-        width: 100%;
-        max-width: 640px;
-        border-radius: 1rem;
-        border: 1px solid var(--border);
-        padding: 1.75rem 1.6rem;
-        background: radial-gradient(circle at top, #111827 0, #020617 55%);
-      }
-      h1 {
-        font-size: 1.4rem;
-        margin: 0 0 0.75rem 0;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      p {
-        margin: 0.4rem 0;
-        font-size: 0.9rem;
-        line-height: 1.7;
-        color: var(--muted);
-      }
-      a {
-        color: var(--accent);
-        text-decoration: none;
-        border-bottom: 1px solid rgba(148,163,184,0.5);
-      }
-      a:hover {
-        border-color: var(--fg);
-      }
-      .tagline {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.18em;
-        color: var(--muted);
-        margin-bottom: 1rem;
-      }
-      ul {
-        margin: 0.75rem 0 0;
-        padding-left: 1.2rem;
-        font-size: 0.88rem;
-        color: var(--muted);
-      }
-    </style>
-  </head>
-  <body>
-    <article class="card">
-      <div class="tagline">About this playground</div>
-      <h1>Rust API wired for Forgeon</h1>
-
-      <p>
-        This tiny service is a <strong>Rust + Axum</strong> playground used to test how
-        Forgeon talks to containers: health checks, routes, timeouts, and log streaming.
-      </p>
-
-      <p>
-        It&apos;s not a real product API, just a safe sandbox. You can deploy this to Forgeon,
-        hit the endpoints, and verify that:
-      </p>
-
-      <ul>
-        <li>the container boots correctly,</li>
-        <li>HTTP routing is working,</li>
-        <li>logs and health checks behave as expected.</li>
-      </ul>
-
-      <p style="margin-top: 0.9rem;">
-        Want the real platform? Visit
-        <a href="https://forgeon.io" target="_blank" rel="noreferrer">forgeon.io</a>.
-      </p>
-    </article>
-  </body>
-</html>
-"#)
-}
-
-async fn framework_page() -> Html<&'static str> {
-    Html(r#"<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Forgeon · Framework stack</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      :root {
-        color-scheme: dark light;
-        --bg: #020617;
-        --fg: #f9fafb;
-        --muted: #9ca3af;
-        --border: #1f2933;
-        --sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-        --mono: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: linear-gradient(to bottom, #020617, #020617 45%, #0b1120 100%);
-        color: var(--fg);
-        font-family: var(--sans);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem;
-      }
-      .shell {
-        width: 100%;
-        max-width: 740px;
-        border-radius: 1.1rem;
-        border: 1px solid var(--border);
-        background: rgba(3,7,18,0.96);
-        box-shadow: 0 18px 50px rgba(0,0,0,0.8);
-        overflow: hidden;
-      }
-      .shell-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.55rem 0.9rem;
-        background: #020617;
-        border-bottom: 1px solid #111827;
-        font-size: 0.75rem;
-        color: var(--muted);
-      }
-      .dots {
-        display: flex;
-        gap: 0.3rem;
-      }
-      .dot {
-        width: 0.55rem;
-        height: 0.55rem;
-        border-radius: 999px;
-        background: #111827;
-      }
-      .body {
-        padding: 1.6rem 1.4rem 1.7rem;
-      }
-      h1 {
-        font-size: 1.2rem;
-        margin: 0 0 0.6rem 0;
-      }
-      .subtitle {
-        font-size: 0.85rem;
-        color: var(--muted);
-        margin-bottom: 1rem;
-      }
-      .grid {
+      }}
+      .grid {{
         display: grid;
-        grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-      .card {
-        border-radius: 0.9rem;
-        border: 1px solid #111827;
-        background: radial-gradient(circle at top left, #111827 0, #020617 55%);
-        padding: 0.9rem 0.85rem;
-      }
-      .label {
+        grid-template-columns: 1.1fr 1fr;
+        gap: 1.5rem;
+      }}
+      @media (max-width: 640px) {{
+        .grid {{ grid-template-columns: 1fr; }}
+      }}
+      .pill-row {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin: 1.25rem 0 0.75rem;
+      }}
+      .pill {{
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.16em;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
         color: var(--muted);
-        margin-bottom: 0.45rem;
-      }
-      .value {
-        font-family: var(--mono);
+      }}
+      .pill strong {{
+        color: var(--accent);
+        font-weight: 600;
+      }}
+      .links {{
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-top: 0.5rem;
         font-size: 0.8rem;
-      }
-      ul {
-        margin: 0.5rem 0 0;
-        padding-left: 1.1rem;
-        font-size: 0.8rem;
-        color: var(--muted);
-      }
-      a {
-        color: var(--fg);
+      }}
+      .links a {{
+        color: var(--accent);
         text-decoration: none;
-        border-bottom: 1px solid rgba(148,163,184,0.4);
-      }
-      a:hover {
-        border-color: var(--fg);
-      }
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+      }}
+      .links a span {{
+        font-size: 0.75rem;
+        color: var(--muted);
+      }}
+      .links a:hover {{
+        text-decoration: underline;
+      }}
+      .meta {{
+        margin-top: 1.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+      }}
+      .badge {{
+        padding: 0.1rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }}
+      .back {{
+        font-size: 0.8rem;
+        margin-bottom: 1rem;
+      }}
+      .back a {{
+        color: var(--muted);
+        text-decoration: none;
+      }}
+      .back a:hover {{
+        color: var(--accent);
+        text-decoration: underline;
+      }}
+      ul {{
+        padding-left: 1rem;
+        margin-top: 0.6rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }}
     </style>
   </head>
   <body>
-    <section class="shell">
-      <header class="shell-header">
-        <div class="dots">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
+    <div class="card">
+      {body}
+    </div>
+  </body>
+</html>"#,
+        title = title,
+        body = body
+    );
+
+    Html(html)
+}
+
+// ───────────────── HANDLERS ─────────────────
+
+async fn home_page() -> Html<String> {
+    html_shell(
+        "Forgeon Rust playground",
+        r#"
+        <div class="grid">
+          <div>
+            <div class="eyebrow">Forgeon · Rust playground</div>
+            <h1>Rust boilerplate, ready for deploy tests.</h1>
+            <p>
+              This service is a small Axum HTTP app you can use to test routing,
+              health checks, JSON APIs, and HTML responses inside Forgeon or on your
+              local machine.
+            </p>
+
+            <div class="pill-row">
+              <div class="pill"><strong>GET</strong> /</div>
+              <div class="pill">Axum · Tokio · tower-http</div>
+              <div class="pill">Playground mode (SKIP_DB=true)</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="links">
+              <a href="/info">
+                /info
+                <span>– service overview & Forgeon context</span>
+              </a>
+              <a href="/about">
+                /about
+                <span>– what this boilerplate is for</span>
+              </a>
+              <a href="/framework">
+                /framework
+                <span>– stack: Axum, Tokio, Mongo, etc.</span>
+              </a>
+              <a href="/status">
+                /status
+                <span>– JSON health endpoint</span>
+              </a>
+              <a href="/v1">
+                /v1
+                <span>– JSON API index (cats, status)</span>
+              </a>
+            </div>
+          </div>
         </div>
-        <span class="truncate">/framework · Rust · Axum · Tokio</span>
-        <span></span>
-      </header>
-      <div class="body">
-        <h1>Framework stack</h1>
-        <p class="subtitle">
-          This playground is built as a small <strong>HTTP API</strong> to validate how
-          Forgeon talks to Rust services before wiring real workloads.
-        </p>
+
+        <div class="meta">
+          <span>Try deploying this to Forgeon as a simple Rust playground.</span>
+          <span class="badge">127.0.0.1:8080</span>
+        </div>
+        "#,
+    )
+}
+
+async fn info_page() -> Html<String> {
+    html_shell(
+        "Forgeon · Rust Playground · Info",
+        r#"
+        <div class="back">
+          <a href="/">← Back to home</a>
+        </div>
 
         <div class="grid">
-          <div class="card">
-            <div class="label">Runtime</div>
-            <div class="value">Rust · Tokio · async/await</div>
+          <div>
+            <div class="eyebrow">Service info</div>
+            <h1>rustapi · Forgeon-ready microservice</h1>
+            <p>
+              This instance exposes a couple of HTML & JSON endpoints so you can
+              quickly verify that traffic is reaching the container correctly.
+            </p>
+
             <ul>
-              <li>Non-blocking IO</li>
-              <li>Good fit for lightweight APIs</li>
+              <li>Check that the container boots and responds.</li>
+              <li>Wire health checks to <code>/status</code>.</li>
+              <li>Inspect logs and latency from Forgeon.</li>
             </ul>
           </div>
 
-          <div class="card">
-            <div class="label">HTTP layer</div>
-            <div class="value">Axum + tower-http</div>
-            <ul>
-              <li>Typed request handlers</li>
-              <li>Tracing, compression, CORS</li>
-            </ul>
-          </div>
-
-          <div class="card">
-            <div class="label">Use in Forgeon</div>
-            <div class="value">Health checks & smoke tests</div>
-            <ul>
-              <li>/status for readiness</li>
-              <li>/info &amp; /about for HTML checks</li>
-            </ul>
+          <div>
+            <div class="links">
+              <a href="/">
+                / <span>– landing page</span>
+              </a>
+              <a href="/v1">
+                /v1 <span>– JSON index for API v1</span>
+              </a>
+              <a href="https://forgeon.io" target="_blank" rel="noreferrer">
+                forgeon.io <span>– learn more about the platform</span>
+              </a>
+            </div>
           </div>
         </div>
+        "#,
+    )
+}
 
-        <p style="margin-top:1.4rem;font-size:0.8rem;color:var(--muted);">
-          You can deploy any Rust/Axum service to Forgeon — this one is just a friendly
-          placeholder while the real gods of compute boot up in the background.
-        </p>
-      </div>
-    </section>
-  </body>
-</html>
-"#)
+async fn about_page() -> Html<String> {
+    html_shell(
+        "Forgeon · About this Rust demo",
+        r#"
+        <div class="back">
+          <a href="/">← Back to home</a>
+        </div>
+
+        <div>
+          <div class="eyebrow">About this playground</div>
+          <h1>Rust API wired for Forgeon.</h1>
+          <p>
+            This tiny service is a <strong>Rust + Axum</strong> playground used to test how
+            Forgeon talks to containers: health checks, routes, timeouts, and log streaming.
+          </p>
+          <p>
+            It&apos;s not a production API – just a safe sandbox you can deploy, poke, and
+            then replace with your real service once everything feels right.
+          </p>
+
+          <ul>
+            <li>Boots fast with no DB when <code>SKIP_DB=true</code>.</li>
+            <li>Has HTML endpoints for visual checks.</li>
+            <li>Has JSON endpoints for programmatic checks.</li>
+          </ul>
+        </div>
+        "#,
+    )
+}
+
+async fn framework_page() -> Html<String> {
+    html_shell(
+        "Forgeon · Framework stack",
+        r#"
+        <div class="back">
+          <a href="/">← Back to home</a>
+        </div>
+
+        <div class="grid">
+          <div>
+            <div class="eyebrow">Stack</div>
+            <h1>Built with Axum & Tokio.</h1>
+            <p>
+              The service uses <strong>Axum</strong> for routing, <strong>Tokio</strong> as the async
+              runtime, and <strong>tower-http</strong> for middleware. In full mode it can talk to
+              MongoDB; in playground mode it runs without any database.
+            </p>
+          </div>
+
+          <div>
+            <div class="links">
+              <a href="/status">
+                /status <span>– health JSON</span>
+              </a>
+              <a href="/info">
+                /info <span>– service overview</span>
+              </a>
+              <a href="/v1">
+                /v1 <span>– API index</span>
+              </a>
+            </div>
+          </div>
+        </div>
+        "#,
+    )
 }
