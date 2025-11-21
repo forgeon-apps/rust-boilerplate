@@ -1,29 +1,57 @@
-use axum::http::header;
-use axum::Router;
+use axum::{
+    http::header,
+    response::IntoResponse,
+    routing::get,
+    Json, Router,
+};
+use serde_json::json;
 use tower_http::{
-    compression::CompressionLayer, cors::CorsLayer, propagate_header::PropagateHeaderLayer,
-    sensitive_headers::SetSensitiveHeadersLayer, trace,
+    compression::CompressionLayer,
+    cors::CorsLayer,
+    propagate_header::PropagateHeaderLayer,
+    sensitive_headers::SetSensitiveHeadersLayer,
+    trace,
 };
 
-use crate::logger;
-use crate::models;
-use crate::routes;
+use crate::{logger, models, routes};
+
+async fn v1_index() -> impl IntoResponse {
+    Json(json!({
+        "name": "rust-boilerplate-api",
+        "version": "1.0.0",
+        "status": "online",
+        "message": "Forgeon Rust v1 playground",
+        "endpoints": {
+            "cats_list": "/v1/cats",
+            "cats_detail": "/v1/cats/{id}",
+            "status": "/status",
+        }
+    }))
+}
 
 pub async fn create_app() -> Router {
     logger::setup();
 
-    models::sync_indexes()
-        .await
-        .expect("Failed to sync database indexes");
+    let skip_db = std::env::var("SKIP_DB")
+        .map(|v| v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+
+    if skip_db {
+        tracing::info!("SKIP_DB=true → skipping database initialization");
+    } else if let Err(err) = models::sync_indexes().await {
+        tracing::warn!("Database init failed, continuing anyway: {err}");
+    }
+
+    // v1 router: index + cats
+    let v1_router = Router::new()
+        .route("/", get(v1_index))
+        .merge(routes::cat::create_route());
 
     Router::new()
         .merge(routes::status::create_route())
         .merge(routes::user::create_route())
-        .merge(Router::new().nest(
-            "/v1",
-            // All public v1 routes will be nested here.
-            Router::new().merge(routes::cat::create_route()),
-        ))
+        .merge(routes::pages::create_route()) // ⬅️ HTML pages we added
+        .nest("/v1", v1_router)
         // High level logging of requests and responses
         .layer(
             trace::TraceLayer::new_for_http()
@@ -45,4 +73,5 @@ pub async fn create_app() -> Router {
         // CORS configuration. This should probably be more restrictive in
         // production.
         .layer(CorsLayer::permissive())
+
 }
