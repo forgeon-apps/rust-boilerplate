@@ -1,23 +1,69 @@
-Here’s a refactored README you can drop in:
-
-````md
 # rustapi
 
-A small **Rust + Axum** HTTP service, wired as a **Forgeon-ready playground**.
+[![Tests](https://github.com/ndelvalle/rustapi/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/ndelvalle/rustapi/actions/workflows/test.yml)
 
-You can use it in two modes:
+RESTful API template built with Rust lang. It uses [MongoDB](https://docs.mongodb.com/)
+database and [Axum](https://github.com/tokio-rs/axum) HTTP framework.
 
-- **Playground mode** (no database, quick to run)
-- **Full API mode** (MongoDB-backed REST API with auth, pagination, tests, etc.)
-
----
-
-## Requirements
+### Requirements
 
 - [Rust](https://www.rust-lang.org/tools/install)
-- (Optional for playground) [MongoDB](https://docs.mongodb.com/manual/installation/)
+- [MongoDB](https://docs.mongodb.com/manual/installation/)
 
----
+### How to use this template
+
+To use this template as your project starting point, click "Use this template" at the top of this page, or click [here](https://github.com/ndelvalle/rustapi/generate).
+
+### Feature highlights
+
+* Authentication. Based on [jsonwebtoken](https://github.com/Keats/jsonwebtoken)
+* Layered configuration. Based on [config-rs](https://github.com/mehcode/config-rs)
+* Logs. Based on [tracing](https://github.com/tokio-rs/tracing)
+* Error handling
+* Pagination
+* E2E Tests
+* OpenAPI Specification
+* CI based on Github actions
+* Dependabot configuration
+
+### Project structure
+
+```bash
+├── Cargo.lock
+├── Cargo.toml
+├── README.md
+├── config
+│   ├── default.json    # Default configuration
+│   ├── production.json # Production configuration (Overwrites the default)
+│   └── test.json       # Test configuration (Overwrites the default)
+├── rustfmt.toml
+├── src
+│   ├── database.rs
+│   ├── errors.rs
+│   ├── lib             # Helpers not related to the business model
+│   │   ├── authenticate_request.rs
+│   │   ├── date.rs
+│   │   ├── mod.rs
+│   │   ├── models.rs   # Base Database Model trait
+│   │   ├── to_object_id.rs
+│   │   └── token.rs
+│   ├── logger.rs
+│   ├── main.rs
+│   ├── models
+│   │   ├── cat.rs
+│   │   ├── mod.rs
+│   │   └── user.rs
+│   ├── routes
+│   │   ├── cat.rs
+│   │   ├── mod.rs
+│   │   ├── status.rs
+│   │   └── user.rs
+│   ├── settings.rs
+│   └── tests           # E2E Tests
+└── test.sh
+```
+
+````md
 
 ## Quick start (Playground mode – no DB)
 
@@ -104,74 +150,12 @@ cargo test -- --test-threads=1 --nocapture --color=always
 
 ---
 
-## Feature highlights
-
-From the original template:
-
-* 🔐 **Authentication**
-  Based on [`jsonwebtoken`](https://github.com/Keats/jsonwebtoken)
-
-* ⚙️ **Layered configuration**
-  Using [`config-rs`](https://github.com/mehcode/config-rs)
-
-* 📡 **Structured logs**
-  Via [`tracing`](https://github.com/tokio-rs/tracing)
-
-* ❗ **Error handling**
-
-* 📄 **Pagination helpers**
-
-* 🧪 **E2E tests**
-
-* 📘 **OpenAPI specification**
-
-* 🤖 **CI** via GitHub Actions
-
-* 🔔 **Dependabot** configuration
-
----
-
-## Project structure
-
-```bash
-├── Cargo.lock
-├── Cargo.toml
-├── README.md
-├── config
-│   ├── default.json    # Default configuration
-│   ├── production.json # Production configuration (overrides default)
-│   └── test.json       # Test configuration (overrides default)
-├── rustfmt.toml
-├── src
-│   ├── app.rs          # App builder (routing, middleware, layers)
-│   ├── database.rs
-│   ├── errors.rs
-│   ├── logger.rs
-│   ├── main.rs
-│   ├── models
-│   │   ├── cat.rs
-│   │   ├── mod.rs
-│   │   └── user.rs
-│   ├── routes
-│   │   ├── cat.rs
-│   │   ├── pages.rs    # HTML routes: /info, /about, /framework
-│   │   ├── status.rs
-│   │   ├── user.rs
-│   │   └── mod.rs
-│   ├── settings.rs
-│   ├── utils           # Helpers / infra utilities
-│   └── tests           # E2E tests
-└── test.sh
-```
-
----
-
 ## Using this template for your own project
 
 To use the original template as a starting point on GitHub:
 
 * Click **“Use this template”** at the top of the repo, or
-* Go directly: `https://github.com/ndelvalle/rustapi/generate`
+* Go directly: `https://github.com/forgeon-apps/rust-boilerplate`
 
 Then you can:
 
