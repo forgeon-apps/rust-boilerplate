@@ -1,5 +1,5 @@
 use axum::http::header;
-use axum::{routing::get, response::Html, Router};
+use axum::{Router};
 use tower_http::{
     compression::CompressionLayer, cors::CorsLayer, propagate_header::PropagateHeaderLayer,
     sensitive_headers::SetSensitiveHeadersLayer, trace,
@@ -23,19 +23,7 @@ pub async fn create_app() -> Router {
     let skip_db = !use_db;
 
     let mut app = Router::new()
-        .route(
-            "/",
-            get(|| async {
-                Html(r#"
-                    <html>
-                      <body style="font-family: system-ui; padding: 24px;">
-                        <h1>rustapi is running ✅</h1>
-                        <p>Tip: run with DB using <code>USE_DB=1 cargo run</code>.</p>
-                      </body>
-                    </html>
-                "#)
-            }),
-        )
+        .merge(routes::public::create_route())
         .merge(routes::status::create_route())
         .merge(Router::new().nest("/v1", Router::new()));
 

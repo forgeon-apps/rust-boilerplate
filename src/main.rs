@@ -10,6 +10,7 @@ mod models;
 mod routes;
 mod settings;
 mod utils;
+mod pages;
 
 // There are a couple approaches to take when implementing E2E tests. This
 // approach adds tests on /src/tests, this way tests can reference modules
