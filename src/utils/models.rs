@@ -1,39 +1,35 @@
 #![allow(dead_code)]
 
 use async_trait::async_trait;
-use futures::stream::TryStreamExt;
-use serde::{de::DeserializeOwned, ser::Serialize};
+use futures::TryStreamExt;
+use serde::{de::DeserializeOwned, Serialize};
 use validator::Validate;
-use wither::bson::doc;
-use wither::bson::from_bson;
-use wither::bson::Bson;
-use wither::bson::Document;
-use wither::bson::{self, oid::ObjectId};
-use wither::mongodb::options::FindOneAndUpdateOptions;
-use wither::mongodb::options::FindOneOptions;
-use wither::mongodb::options::FindOptions;
-use wither::mongodb::options::ReturnDocument;
-use wither::mongodb::options::UpdateOptions;
-use wither::mongodb::results::DeleteResult;
-use wither::mongodb::results::UpdateResult;
-use wither::Model as WitherModel;
-use wither::ModelCursor;
 
-use crate::database;
-use crate::errors::Error;
+use wither::{
+    bson::{self, doc, oid::ObjectId, Bson, Document},
+    mongodb::{
+        options::{
+            FindOneAndUpdateOptions, FindOneOptions, FindOptions, ReturnDocument, UpdateOptions,
+        },
+        results::{DeleteResult, UpdateResult},
+    },
+    Model as WitherModel,
+    ModelCursor,
+};
+
+use crate::{database, errors::Error};
 
 // This is the Model trait. All models that have a MongoDB collection should
-// implement this and therefore inherit theses methods.
+// implement this and therefore inherit these methods.
+//
+// Enterprise note:
+// async_trait produces Send futures by default → we require Send + Sync here.
 #[async_trait]
-pub trait ModelExt
-where
-    Self: WitherModel + Validate,
-{
+pub trait ModelExt: WitherModel + Validate + Sized + Send + Sync {
     async fn create(mut model: Self) -> Result<Self, Error> {
         let connection = database::connection().await;
-        model.validate().map_err(|_error| Error::bad_request())?;
+        model.validate().map_err(|_| Error::bad_request())?;
         model.save(connection, None).await.map_err(Error::Wither)?;
-
         Ok(model)
     }
 
@@ -168,13 +164,12 @@ where
             .count_documents(query, None)
             .await
             .map_err(Error::Mongo)?;
-
         Ok(count > 0)
     }
 
     async fn aggregate<A>(pipeline: Vec<Document>) -> Result<Vec<A>, Error>
     where
-        A: Serialize + DeserializeOwned,
+        A: Serialize + DeserializeOwned + Send,
     {
         let connection = database::connection().await;
 
@@ -188,7 +183,7 @@ where
 
         let documents = documents
             .into_iter()
-            .map(|document| from_bson::<A>(Bson::Document(document)))
+            .map(|document| bson::from_bson::<A>(Bson::Document(document)))
             .collect::<Result<Vec<A>, bson::de::Error>>()
             .map_err(Error::SerializeMongoResponse)?;
 
