@@ -1,68 +1,67 @@
-use axum::{
-    http::header,
-    response::IntoResponse,
-    routing::get,
-    Json, Router,
-};
-use serde_json::json;
+use axum::http::header;
+use axum::{routing::get, response::Html, Router};
 use tower_http::{
-    compression::CompressionLayer,
-    cors::CorsLayer,
-    propagate_header::PropagateHeaderLayer,
-    sensitive_headers::SetSensitiveHeadersLayer,
-    trace,
+    compression::CompressionLayer, cors::CorsLayer, propagate_header::PropagateHeaderLayer,
+    sensitive_headers::SetSensitiveHeadersLayer, trace,
 };
 
-use crate::{logger, models, routes};
+use crate::logger;
+use crate::models;
+use crate::routes;
 
-async fn v1_index() -> impl IntoResponse {
-    Json(json!({
-        "name": "rust-boilerplate-api",
-        "version": "1.0.0",
-        "status": "online",
-        "message": "Forgeon Rust v1 playground",
-        "endpoints": {
-            "cats_list": "/v1/cats",
-            "cats_detail": "/v1/cats/{id}",
-            "status": "/status"
-        }
-    }))
+fn env_truthy(key: &str) -> bool {
+    std::env::var(key)
+        .map(|v| matches!(v.as_str(), "1" | "true" | "TRUE" | "yes" | "YES"))
+        .unwrap_or(false)
 }
 
 pub async fn create_app() -> Router {
     logger::setup();
 
-    let skip_db = std::env::var("SKIP_DB")
-        .map(|v| v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false);
+    // ✅ default: no DB. Enable DB with USE_DB=1
+    let use_db = env_truthy("USE_DB");
+    let skip_db = !use_db;
+
+    let mut app = Router::new()
+        .route(
+            "/",
+            get(|| async {
+                Html(r#"
+                    <html>
+                      <body style="font-family: system-ui; padding: 24px;">
+                        <h1>rustapi is running ✅</h1>
+                        <p>Tip: run with DB using <code>USE_DB=1 cargo run</code>.</p>
+                      </body>
+                    </html>
+                "#)
+            }),
+        )
+        .merge(routes::status::create_route())
+        .merge(Router::new().nest("/v1", Router::new()));
 
     if skip_db {
-        tracing::info!("SKIP_DB=true → skipping database initialization");
-    } else if let Err(err) = models::sync_indexes().await {
-        tracing::warn!("Database init failed, continuing anyway: {err}");
+        tracing::warn!("🟡 DB disabled (set USE_DB=1 to enable). Skipping Mongo init + DB routes");
+    } else {
+        models::sync_indexes()
+            .await
+            .expect("Failed to sync database indexes");
+
+        app = app
+            .merge(routes::user::create_route())
+            .merge(Router::new().nest(
+                "/v1",
+                Router::new().merge(routes::cat::create_route()),
+            ));
     }
 
-    let v1_router = Router::new()
-        .route("/", get(v1_index))
-        .merge(routes::cat::create_route());
-
-    Router::new()
-        .merge(routes::status::create_route())
-        .merge(routes::user::create_route())
-        .merge(routes::pages::create_route())
-        .nest("/v1", v1_router)
-        .layer(
-            trace::TraceLayer::new_for_http()
-                .make_span_with(trace::DefaultMakeSpan::new().include_headers(true))
-                .on_request(trace::DefaultOnRequest::new().level(tracing::Level::INFO))
-                .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO)),
-        )
-        .layer(SetSensitiveHeadersLayer::new(std::iter::once(
-            header::AUTHORIZATION,
-        )))
-        .layer(CompressionLayer::new())
-        .layer(PropagateHeaderLayer::new(header::HeaderName::from_static(
-            "x-request-id",
-        )))
-        .layer(CorsLayer::permissive())
+    app.layer(
+        trace::TraceLayer::new_for_http()
+            .make_span_with(trace::DefaultMakeSpan::new().include_headers(true))
+            .on_request(trace::DefaultOnRequest::new().level(tracing::Level::INFO))
+            .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO)),
+    )
+    .layer(SetSensitiveHeadersLayer::new(std::iter::once(header::AUTHORIZATION)))
+    .layer(CompressionLayer::new())
+    .layer(PropagateHeaderLayer::new(header::HeaderName::from_static("x-request-id")))
+    .layer(CorsLayer::permissive())
 }

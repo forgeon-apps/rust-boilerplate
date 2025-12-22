@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, env};
+use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tracing::info;
 
@@ -11,74 +11,26 @@ mod routes;
 mod settings;
 mod utils;
 
+// There are a couple approaches to take when implementing E2E tests. This
+// approach adds tests on /src/tests, this way tests can reference modules
+// inside the src folder. Another approach would be to have the tests in a
+// /tests folder on the root of the project, to do this and be able to import
+// modules from the src folder, modules need to be exported as a lib.
 #[cfg(test)]
 mod tests;
 
+use errors::Error;
 use settings::SETTINGS;
-
-/// Resolve the port in a "platform friendly" way:
-/// 1) $PORT (Forgeon / Heroku / most PaaS)
-/// 2) SETTINGS.server.port (your config)
-fn resolve_port() -> u16 {
-    if let Ok(p) = env::var("PORT") {
-        if let Ok(n) = p.parse::<u16>() {
-            return n;
-        }
-        // If PORT exists but invalid, we still continue with config
-        // (but we log it so devs know what's wrong).
-        info!("⚠️  Invalid PORT env var value: {:?}. Falling back to config.", p);
-    }
-    SETTINGS.server.port
-}
-
-/// Graceful shutdown handler for containers:
-/// - SIGTERM is what orchestrators send on deploy/stop
-/// - SIGINT for local Ctrl+C
-async fn shutdown_signal() {
-    #[cfg(unix)]
-    {
-        use tokio::signal::unix::{signal, SignalKind};
-
-        let mut term = signal(SignalKind::terminate())
-            .expect("failed to install SIGTERM handler");
-        let mut int = signal(SignalKind::interrupt())
-            .expect("failed to install SIGINT handler");
-
-        tokio::select! {
-            _ = term.recv() => {
-                info!("🛑 SIGTERM received, starting graceful shutdown...");
-            }
-            _ = int.recv() => {
-                info!("🛑 SIGINT received, starting graceful shutdown...");
-            }
-        }
-    }
-
-    #[cfg(not(unix))]
-    {
-        // Windows fallback: Ctrl+C
-        let _ = tokio::signal::ctrl_c().await;
-        info!("🛑 Ctrl+C received, starting graceful shutdown...");
-    }
-}
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    // If your logger module sets up tracing, keep it here:
-    // logger::init();
-
-    let port = resolve_port();
-
-    // ✅ Critical for containers: bind to 0.0.0.0 so traffic can reach us.
-    let address = SocketAddr::from(([0, 0, 0, 0], port));
+    let port = SETTINGS.server.port;
+    let address = SocketAddr::from(([127, 0, 0, 1], port));
 
     let app = app::create_app().await;
 
     let listener = TcpListener::bind(address).await?;
-    info!("🚀 Server listening on http://{}", &address);
-    info!("ℹ️  Using PORT={}, config_port={}", port, SETTINGS.server.port);
+    info!("Server listening on {}", &address);
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
+    axum::serve(listener, app).await
 }
