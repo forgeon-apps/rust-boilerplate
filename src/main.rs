@@ -70,9 +70,7 @@ async fn main() -> Result<(), std::io::Error> {
     let port = resolve_port();
 
     // ✅ Critical for containers: bind to 0.0.0.0 so traffic can reach us.
-    let address: SocketAddr = format!("{}:{}", SETTINGS.server.host, SETTINGS.server.port)
-        .parse()
-        .expect("Invalid server.host/server.port");
+    let address = SocketAddr::from(([0, 0, 0, 0], port));
 
     let app = app::create_app().await;
 
