@@ -20,7 +20,7 @@ pub async fn start_api_once() {
 
         let app = create_app().await;
         let port = SETTINGS.server.port;
-        let address = SocketAddr::from(([127, 0, 0, 1], port));
+        let address = SocketAddr::from(([0, 0, 0, 0], port));
         let listener = TcpListener::bind(address)
             .await
             .expect("error listening on the assigner port");
