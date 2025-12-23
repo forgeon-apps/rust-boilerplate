@@ -30,16 +30,16 @@ pub async fn create_app() -> Router {
     if skip_db {
         tracing::warn!("🟡 DB disabled (set USE_DB=1 to enable). Skipping Mongo init + DB routes");
     } else {
-        models::sync_indexes()
-            .await
-            .expect("Failed to sync database indexes");
-
-        app = app
-            .merge(routes::user::create_route())
-            .merge(Router::new().nest(
-                "/v1",
-                Router::new().merge(routes::cat::create_route()),
-            ));
+        if let Err(e) = models::sync_indexes().await {
+            tracing::error!(error=%e, "🔴 DB init failed; continuing without DB routes (set USE_DB=0 to skip)");
+        } else {
+            app = app
+                .merge(routes::user::create_route())
+                .merge(Router::new().nest(
+                    "/v1",
+                    Router::new().merge(routes::cat::create_route()),
+                ));
+        }
     }
 
     app.layer(
