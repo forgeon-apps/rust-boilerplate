@@ -25,13 +25,21 @@ use settings::SETTINGS;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let port = SETTINGS.server.port;
+    // 1. Try to get PORT from environment, fallback to your SETTINGS
+    let port: u16 = std::env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(SETTINGS.server.port);
+
     let address = SocketAddr::from(([0, 0, 0, 0], port));
 
     let app = app::create_app().await;
 
     let listener = TcpListener::bind(address).await?;
-    info!("Server listening on {}", &address);
+    
+    // Use println! here to ensure you see this in logs 
+    // even if tracing is not fully initialized yet
+    println!("🚀 Server started on {}", address);
 
     axum::serve(listener, app).await
 }
