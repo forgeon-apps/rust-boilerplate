@@ -1,0 +1,12 @@
+{
+  "deployment_target": "docker",
+  "build_system": "dockerfile",
+  "internal_port": 8080,
+  "port": 8080,
+  "start": "/app/app",
+  "build_args": {
+    "CARGO_BIN_NAME": "rustapi",
+    "CARGO_WORKDIR": ".",
+    "RUST_VERSION": "1.80.0"
+  }
+}
