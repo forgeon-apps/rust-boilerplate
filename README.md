@@ -73,3 +73,6 @@ make test
 
 Contributors are welcome, please fork and send pull requests! If you find a bug
 or have any ideas on how to improve this project please submit an issue.
+
+## One click deploy :
+[![Deploy with Forgeon](https://forgeon.io/images/button-deploy/png/deploy-to-forgeon-6.png)](https://forgeon.io/projects?import=1&no_upload=1&auto=0&git_url=https%3A%2F%2Fgithub.com%2Fforgeon-apps%2Frust-boilerplate)
